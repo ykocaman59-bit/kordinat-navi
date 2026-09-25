@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Tır Adres Arama</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .search-box { width: 100%; max-width: 500px; display: flex; gap: 10px; margin-top: 20px; }
+        input { flex: 1; padding: 12px; font-size: 16px; border-radius: 5px; border: none; }
+        button { padding: 12px 20px; font-size: 16px; background: #ff9800; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #e68900; }
+        #sonuc { margin-top: 20px; width: 100%; max-width: 500px; padding: 15px; background: #1e1e1e; border-radius: 5px; min-height: 50px; }
+    </style>
+</head>
+<body>
+
+    <h2>Tır Navigasyon - Akıllı Adres Bulucu</h2>
+    <p>Sadece sokak adı yazın (Örn: <i>Eren Sokak</i>) veya başka şehir belirtin (Örn: <i>Eren Sokak İzmir</i>)</p>
+
+    <div class="search-box">
+        <input type="text" id="adresInput" placeholder="Adres veya sokak adı yazın...">
+        <button onclick="adresAra()">Ara</button>
+    </div>
+
+    <div id="sonuc">Sonuçlar burada görünecek...</div>
+
+    <script>
+        async function adresAra() {
+            let inputVal = document.getElementById('adresInput').value.trim();
+            let sonucDiv = document.getElementById('sonuc');
+
+            if (!inputVal) {
+                sonucDiv.innerHTML = "Lütfen bir arama terimi girin!";
+                return;
+            }
+
+            sonucDiv.innerHTML = "Aranıyor, lütfen bekleyin...";
+
+            // Varsayılan olarak kullanıcının bulunduğu bölgeyi (Sultanbeyli/İstanbul) merkeze alıyoruz
+            let aramaSorgusu = inputVal;
+            let sehirler = ["istanbul", "izmir", "ankara", "bursa", "antalya", "adana", "konya", "trabzon", "gaziantep"];
+            
+            let sehirBulundu = sehirler.some(sehir => inputVal.toLowerCase().includes(sehir));
+            
+            // Eğer kullanıcı sadece "Eren Sokak" yazdıysa, sistemi otomatik olarak Sultanbeyli/İstanbul'a odaklıyoruz
+            if (!sehirBulundu) {
+                aramaSorgusu = `${inputVal}, Sultanbeyli, İstanbul`;
+            }
+
+            // Dünya genelindeki tüm açık kaynak veritabanından cımbızla çekme sorgusu
+            let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(aramaSorgusu)}&limit=1`;
+
+            try {
+                let response = await fetch(url);
+                let data = await response.json();
+
+                if (data && data.length > 0) {
+                    let yer = data[0];
+                    sonucDiv.innerHTML = `
+                        <b>Adres Bulundu!</b><br>
+                        📍 ${yer.display_name}<br>
+                        🌐 Enlem: ${yer.lat}, Boylam: ${yer.lon}<br>
+                        <button style="margin-top:10px; background:#4CAF50;" onclick="rotayaGit(${yer.lat}, ${yer.lon})">Bu Adrese Rota Oluştur</button>
+                    `;
+                } else {
+                    sonucDiv.innerHTML = "<span style='color: #ff5252;'>Adres bulunamadı! Aradığınız kriterlere uygun bir yer yok.</span>";
+                }
+            } catch (error) {
+                sonucDiv.innerHTML = "Bağlantı hatası oluştu, tekrar deneyin.";
+            }
+        }
+
+        function rotayaGit(lat, lon) {
+            alert(`Tır Navigasyonu tetiklendi!\nHedef Koordinatlar -> Lat: ${lat}, Lon: ${lon}`);
+            // Buraya kendi tır navigasyon harita fonksiyonunu bağlayabilirsin
+        }
+    </script>
+</body>
+</html>
